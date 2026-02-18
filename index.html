@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>fingDB - Grafo de Previas</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><path fill='%2358a6ff' d='M464 48c0-26.5-21.5-48-48-48H96c-26.5 0-48 21.5-48 48v320c0 26.5 21.5 48 48 48h320c26.5 0 48-21.5 48-48V48zm-72 72v96H120V120h272zm-48 64c0-8.8-7.2-16-16-16H152c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h136c8.8 0 16-7.2 16-16v-16zM152 296c0-8.8-7.2-16-16-16H120c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h16c8.8 0 16-7.2 16-16v-16zm80 0c0-8.8-7.2-16-16-16h-16c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h16c8.8 0 16-7.2 16-16v-16zm80 0c0-8.8-7.2-16-16-16h-16c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h16c8.8 0 16-7.2 16-16v-16zm80 0c0-8.8-7.2-16-16-16h-16c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h16c8.8 0 16-7.2 16-16v-16zM152 408c0-8.8-7.2-16-16-16H120c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h16c8.8 0 16-7.2 16-16v-16zm80 0c0-8.8-7.2-16-16-16h-16c-8.8 0-16 7.2-16 16v16c0 8.8 7.2 16 16 16h16c8.8 0 16-7.2 16-16v-16z'/></svg>">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --bg-hover: #30363d;
+      --text-primary: #f0f6fc;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent-bisemestral: #58a6ff;
+      --accent-par: #bc8cff;
+      --accent-impar: #f778ba;
+      --border-color: #30363d;
+      --success: #3fb950;
+      --warning: #d29922;
+      --error: #f85149;
+      --purple: #a78bfa;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      overflow: hidden;
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-weight: 500;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: var(--bg-secondary);
+      padding: 0.875rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    header h1 i {
+      color: var(--accent-bisemestral);
+      font-size: 1.125rem;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--bg-tertiary);
+      padding: 0.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .filter-btn {
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-bisemestral);
+      color: var(--bg-primary);
+      box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+    }
+
+    button.icon-btn {
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+    }
+
+    button.icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .github-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .github-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .main-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .graph-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(ellipse at 50% 30%, #0f1923 0%, var(--bg-primary) 60%);
+    }
+
+    #graph {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      position: relative;
+    }
+    
+    #graph svg {
+      display: block;
+    }
+    
+    #graph svg g.smooth-transition {
+      transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .sidebar {
+      width: 300px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 100;
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .sidebar.collapsed {
+      transform: translateX(100%);
+    }
+
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 99;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-bisemestral), var(--accent-par));
+      color: white;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(88, 166, 255, 0.4);
+      transition: all 0.2s ease;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sidebar-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 24px rgba(88, 166, 255, 0.5);
+    }
+
+    .sidebar-toggle.visible {
+      display: flex;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      h1 {
+        font-size: 1rem;
+      }
+
+      .controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .filter-group {
+        order: 3;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.25rem;
+      }
+
+      .filter-btn {
+        white-space: nowrap;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .career-select, .profile-select {
+        max-width: none;
+        flex: 1;
+        min-width: 120px;
+      }
+
+      .sidebar {
+        width: 85%;
+        max-width: 320px;
+      }
+
+      .sidebar-toggle {
+        display: flex;
+      }
+
+      .legend {
+        bottom: 5rem;
+        left: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.625rem;
+        padding: 0.5rem;
+      }
+
+      .legend-items {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .modal {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        max-height: 100%;
+        border-radius: 0;
+        animation: modalSlideUp 0.3s ease;
+      }
+
+      @keyframes modalSlideUp {
+        from { 
+          opacity: 0;
+          transform: translateY(100%);
+        }
+        to { 
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-body {
+        max-height: calc(100vh - 60px);
+        padding: 1rem;
+      }
+
+      .modal-row {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .modal-field {
+        flex: none;
+        width: 100%;
+      }
+
+      .previas-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-title {
+        font-size: 1rem;
+      }
+    }
+
+    .sidebar-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+    }
+
+    .sidebar-title {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.75rem;
+    }
+
+    .search-wrapper {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.625rem 0.875rem 0.625rem 2.25rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 0.8125rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-bisemestral);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      pointer-events: none;
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .materia-item {
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .materia-item:hover {
+      background: var(--bg-hover);
+      transform: translateX(-2px);
+      border-color: var(--border-color);
+    }
+
+    .materia-item.highlighted {
+      border-color: var(--accent-bisemestral);
+      background: rgba(88, 166, 255, 0.1);
+      box-shadow: 0 0 0 1px var(--accent-bisemestral);
+    }
+
+    .materia-item-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .periodo-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .career-select, .profile-select {
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      max-width: 220px;
+      transition: all 0.15s ease;
+    }
+
+    .career-select:hover, .profile-select:hover {
+      border-color: var(--text-muted);
+    }
+
+    .career-select:focus, .profile-select:focus {
+      border-color: var(--accent-bisemestral);
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+    }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-switch input {
+      display: none;
+    }
+
+    .toggle-slider {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      background: var(--bg-tertiary);
+      border-radius: 11px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--accent-bisemestral);
+      border-color: var(--accent-bisemestral);
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(18px);
+      background: white;
+    }
+
+    .toggle-label {
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+
+    .filter-label {
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    .node-obligatoria {
+      stroke: #3fb950 !important;
+    }
+
+    .node-opcional {
+      stroke: #58a6ff !important;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    .periodo-dot.bisemestral { background: var(--accent-bisemestral); }
+    .periodo-dot.par { background: var(--accent-par); }
+    .periodo-dot.impar { background: var(--accent-impar); }
+
+    .materia-item-name {
+      font-weight: 600;
+      font-size: 0.8125rem;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .materia-item-meta {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      margin-top: 0.375rem;
+      padding-left: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .materia-item-meta .creditos {
+      color: var(--purple);
+      font-weight: 600;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      background: rgba(22, 27, 34, 0.95);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      font-size: 0.6875rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .legend-title {
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-size: 0.625rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .legend-items {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border-color);
+      border-top-color: var(--accent-bisemestral);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(248, 81, 73, 0.15);
+      border: 1px solid var(--error);
+      color: var(--error);
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(248, 81, 73, 0.2);
+    }
+
+    .link {
+      fill: none;
+      stroke: #8b949e;
+      stroke-width: 1.5px;
+      stroke-opacity: 0.6;
+      transition: stroke-opacity 0.2s;
+    }
+
+    .link.incoming {
+      stroke: #f85149;
+      stroke-opacity: 1;
+      stroke-width: 2.5px;
+    }
+
+    .link.outgoing {
+      stroke: #3fb950;
+      stroke-opacity: 1;
+      stroke-width: 2.5px;
+    }
+
+    .link.dimmed {
+      stroke-opacity: 0.15;
+    }
+
+    .node-card {
+      cursor: pointer;
+    }
+
+    .node-card rect {
+      /* Los estilos se aplican dinámicamente desde D3.js */
+      rx: 8;
+      ry: 8;
+      transition: all 0.2s ease;
+    }
+
+    .node-card text {
+      fill: var(--text-primary);
+      font-size: 10px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .node-card .creditos {
+      fill: var(--purple);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-overlay.clickable {
+      cursor: pointer;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 90%;
+      max-height: 85vh;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from { 
+        opacity: 0;
+        transform: scale(0.95) translateY(20px);
+      }
+      to { 
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-tertiary);
+    }
+
+    .modal-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .modal-close {
+      background: var(--bg-hover);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .modal-close:hover {
+      background: var(--error);
+      color: white;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+      overflow-y: auto;
+      max-height: calc(85vh - 60px);
+    }
+
+    .modal-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-field {
+      flex: 1;
+    }
+
+    .modal-label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.375rem;
+      font-weight: 600;
+    }
+
+    .modal-value {
+      font-size: 0.9375rem;
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .modal-value.creditos-value {
+      color: var(--purple);
+    }
+
+    .modal-tag {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .modal-tag.bisemestral {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent-bisemestral);
+    }
+
+    .modal-tag.par {
+      background: rgba(188, 140, 255, 0.15);
+      color: var(--accent-par);
+    }
+
+    .modal-tag.impar {
+      background: rgba(247, 120, 186, 0.15);
+      color: var(--accent-impar);
+    }
+
+    .previas-section {
+      margin-top: 1rem;
+    }
+
+    .previas-section h4 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    .previas-section h4 .count {
+      background: var(--bg-tertiary);
+      padding: 0.125rem 0.375rem;
+      border-radius: 3px;
+      font-size: 0.625rem;
+      font-weight: 500;
+    }
+
+    .previas-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+
+    .prev-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem 0.5rem;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    .prev-chip .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+
+    .prev-chip .dot.aprobado {
+      background: var(--success);
+    }
+
+    .prev-chip .dot.exonerado {
+      background: var(--warning);
+    }
+
+    .no-previas {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.6875rem;
+      text-transform: uppercase;
+    }
+
+    .status-badge.active {
+      color: var(--success);
+    }
+
+    .status-badge.inactive {
+      color: var(--accent-danger);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1><i class="fas fa-database"></i> fingDB</h1>
+      <div class="controls">
+        <a href="https://github.com/emiliano-gandini-outeda" target="_blank" class="github-btn">
+          Saber más
+        </a>
+        <button class="icon-btn" @click="resetView" title="Centrar vista">⌂</button>
+      </div>
+    </header>
+    <div class="main-content">
+      <div class="graph-container">
+        <div id="graph"></div>
+        <div v-if="loading" class="loading">
+          <div class="spinner"></div>
+          <span>Cargando...</span>
+        </div>
+        <div v-if="error" class="error">{{ error }}</div>
+        <div class="legend">
+          <div class="legend-title">Período</div>
+          <div class="legend-items">
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--accent-bisemestral);"></div>
+              <span>Bise.</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--accent-par);"></div>
+              <span>Par</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--accent-impar);"></div>
+              <span>Impar</span>
+            </div>
+          </div>
+          <div v-if="selectedCareer" class="legend-title" style="margin-top: 0.5rem;">Carrera</div>
+          <div v-if="selectedCareer" class="legend-items">
+            <div class="legend-item">
+              <div class="legend-swatch" style="background: #ffffff;"></div>
+              <span>Obligatoria</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-swatch" style="background: #d4a72c;"></div>
+              <span>Opcional</span>
+            </div>
+          </div>
+          <div v-if="selectedProfile" class="legend-title" style="margin-top: 0.5rem;">Perfil</div>
+          <div v-if="selectedProfile" class="legend-items">
+            <div class="legend-item">
+              <div class="legend-swatch" style="background: #f0883e;"></div>
+              <span>Obligatoria de Perfil</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+        <div class="sidebar-header">
+          <div class="sidebar-title">Materias ({{ filteredMaterias.length }})</div>
+          <div class="search-wrapper">
+            <span class="search-icon">⌕</span>
+            <input type="text" class="search-input" v-model="searchQuery" placeholder="Buscar..." @input="onSearchInput">
+          </div>
+          <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
+            <select class="career-select" style="width: 100%;" v-model="selectedCareer">
+              <option :value="null">Sin carrera</option>
+              <option v-for="c in carreras" :key="c.id" :value="c">{{ c.name }}</option>
+            </select>
+            <select v-if="selectedCareer && selectedCareer.perfiles && selectedCareer.perfiles.length > 0" class="profile-select" style="width: 100%;" v-model="selectedProfile">
+              <option :value="null">Sin perfil</option>
+              <option v-for="p in perfiles" :key="p.id" :value="p">{{ p.name }}</option>
+            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" v-model="mathInitEnabled" @change="onMathInitChange">
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Matemática Inicial</span>
+            </label>
+          </div>
+        </div>
+        <div class="sidebar-content">
+          <div 
+            v-for="materia in filteredMaterias" 
+            :key="materia.id" 
+            class="materia-item"
+            :class="{ highlighted: highlightedId === materia.id }"
+             @click="focusAndOpenModal(materia.id, false)"
+          >
+            <div class="materia-item-header">
+              <div class="periodo-dot" :class="materia.periodo"></div>
+              <div class="materia-item-name">{{ materia.name }}</div>
+            </div>
+            <div class="materia-item-meta">
+              {{ capitalize(materia.periodo) }} · {{ materia.creditos || 0 }} créd.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="sidebar-toggle" :class="{ visible: isMobile }" @click="toggleSidebar">
+      {{ sidebarCollapsed ? '☰' : '✕' }}
+    </button>
+
+    <div v-if="selectedMateria" class="modal-overlay clickable" @click="closeModal">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <span class="modal-title">{{ selectedMateria.name }}</span>
+          <button class="modal-close" @click="closeModal">×</button>
+        </div>
+          <div class="modal-body">
+           <div class="modal-row">
+             <div class="modal-field">
+               <div class="modal-label">Instituto</div>
+               <div class="modal-value">{{ getInstitutoName(selectedMateria.instituto_id) }}</div>
+             </div>
+           </div>
+           <div class="modal-row">
+             <div class="modal-field">
+               <div class="modal-label">Período</div>
+               <div class="modal-value">
+                 <span class="modal-tag" :class="selectedMateria.periodo">{{ capitalize(selectedMateria.periodo) }}</span>
+               </div>
+             </div>
+             <div class="modal-field">
+               <div class="modal-label">Créditos</div>
+               <div class="modal-value creditos-value">{{ selectedMateria.creditos || 0 }}</div>
+             </div>
+           </div>
+          
+          <div class="previas-section" v-if="selectedMateria.previas_aprobado && selectedMateria.previas_aprobado.length">
+            <h4>Previas Aprobadas <span class="count">{{ selectedMateria.previas_aprobado.length }}</span></h4>
+            <div class="previas-grid">
+              <div v-for="prev in selectedMateria.previas_aprobado" :key="prev.id" class="prev-chip">
+                <span class="dot aprobado"></span>
+                {{ prev.name }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="previas-section" v-if="selectedMateria.previas_exonerado && selectedMateria.previas_exonerado.length">
+            <h4>Previas Exoneradas <span class="count">{{ selectedMateria.previas_exonerado.length }}</span></h4>
+            <div class="previas-grid">
+              <div v-for="prev in selectedMateria.previas_exonerado" :key="prev.id" class="prev-chip">
+                <span class="dot exonerado"></span>
+                {{ prev.name }}
+              </div>
+            </div>
+          </div>
+          
+          <div class="previas-section" v-if="(!selectedMateria.previas_aprobado || !selectedMateria.previas_aprobado.length) && (!selectedMateria.previas_exonerado || !selectedMateria.previas_exonerado.length)">
+            <p class="no-previas">Sin previas</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    const PERIODO_COLORS = {
+      'bisemestral': '#58a6ff',
+      'par': '#bc8cff',
+      'impar': '#f778ba'
+    };
+
+    function getPeriodoColor(periodo) {
+      if (!periodo) return '#58a6ff';
+      const p = String(periodo).toLowerCase().trim();
+      return PERIODO_COLORS[p] || '#58a6ff';
+    }
+
+    function capitalize(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+    }
+
+    function getInstitutoName(instituto_id) {
+      const nameMap = {
+        1: 'Instituto de Computación',
+        2: 'Instituto de Matemática y Estadística',
+        3: 'Instituto de Ingeniería Eléctrica',
+        4: 'Instituto de Agrimensura',
+        5: 'Instituto de Mecánica de los Fluidos',
+        6: 'Instituto de Física',
+        7: 'Instituto de Ingeniería Mecánica',
+        8: 'Instituto de Ensayo de Materiales',
+        9: 'Instituto de Estructuras y Transporte',
+        10: 'Instituto de Ingeniería Química',
+        11: 'Departamento de Inserción Social'
+      };
+      return nameMap[instituto_id] || ('Instituto #' + instituto_id);
+    }
+
+    createApp({
+      setup() {
+        const apiUrl = ref(API_CONFIG.apiUrl);
+        const apiKey = ref(API_CONFIG.apiKey);
+        const materias = ref([]);
+        const loading = ref(false);
+        const error = ref(null);
+        const searchQuery = ref('');
+        const highlightedId = ref(null);
+        const selectedMateria = ref(null);
+        const filtro = ref('todos');
+        const sidebarCollapsed = ref(false);
+        const isMobile = ref(false);
+        
+        const selectedCareer = ref(null);
+        const selectedProfile = ref(null);
+        const mathInitEnabled = ref(true);
+        const carreras = ref([]);
+        const perfiles = ref([]);
+        
+        function removeAccents(str) {
+          if (!str) return '';
+          return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+        
+        let svg = null;
+        let g = null;
+        let zoom = null;
+        let nodeMap = new Map();
+        let containerBounds = null;
+        let currentTransform = d3.zoomIdentity;
+
+        const filteredMaterias = computed(() => {
+          let result = materias.value;
+          
+          // Filter by career if selected
+          if (selectedCareer.value) {
+            const obligatoriasIds = new Set((selectedCareer.value.materias_obligatorias || []).map(m => Number(m.id)));
+            const opcionalesIds = new Set((selectedCareer.value.materias_opcionales || []).map(m => Number(m.id)));
+            let careerMateriaIds = new Set([...obligatoriasIds, ...opcionalesIds]);
+            
+            // Add profile obligatorias
+            if (selectedProfile.value) {
+              const profileObligatorias = selectedProfile.value.materias_obligatorias || [];
+              profileObligatorias.forEach(m => careerMateriaIds.add(Number(m.id)));
+            }
+            
+            result = result.filter(m => careerMateriaIds.has(Number(m.id)));
+          }
+          
+          if (searchQuery.value) {
+            const q = removeAccents(searchQuery.value.toLowerCase());
+            result = result.filter(m => removeAccents(m.name.toLowerCase()).includes(q));
+          }
+          
+          return result;
+        });
+
+        function setFiltro(val) {
+          filtro.value = val;
+        }
+
+        async function loadCarreras() {
+          try {
+            const response = await fetch(`${apiUrl.value}/carreras`, {
+              headers: { 'X-API-Key': apiKey.value }
+            });
+            if (response.ok) {
+              carreras.value = await response.json();
+              setTimeout(function() { renderGraph(); }, 100);
+            }
+          } catch (e) {
+            console.error('Error loading carreras:', e);
+          }
+        }
+        
+        async function loadPerfiles(carreraId) {
+          try {
+            const response = await fetch(`${apiUrl.value}/perfiles/by-carrera/${carreraId}`, {
+              headers: { 'X-API-Key': apiKey.value }
+            });
+            if (response.ok) {
+              perfiles.value = await response.json();
+            }
+          } catch (e) {
+            console.error('Error loading perfiles:', e);
+          }
+        }
+
+function onCareerChange() {
+          console.log('onCareerChange called, selectedCareer:', selectedCareer.value ? selectedCareer.value.name : 'null');
+          selectedProfile.value = null;
+          if (selectedCareer.value) {
+            console.log('Loading perfiles for carrera:', selectedCareer.value.id);
+            loadPerfiles(selectedCareer.value.id).then(function() {
+              console.log('Perfiles loaded, rendering graph');
+              renderGraph();
+            });
+          } else {
+            perfiles.value = [];
+            console.log('No career selected, rendering graph');
+            renderGraph();
+          }
+        }
+        
+        function onProfileChange() {
+          setTimeout(function() { renderGraph(); }, 100);
+        }
+        
+        function onMathInitChange() {
+          setTimeout(function() { renderGraph(); }, 100);
+        }
+
+        function getMateriaStatus(materiaId) {
+          console.log('getMateriaStatus called - selectedCareer:', selectedCareer.value ? 'exists' : 'null', 'selectedProfile:', selectedProfile.value ? 'exists' : 'null');
+          
+          if (!selectedCareer.value) {
+            console.log('getMateriaStatus: no career selected');
+            return null;
+          }
+          
+          const oid = Number(materiaId);
+          const obligatorias = selectedCareer.value.materias_obligatorias || [];
+          const opcionales = selectedCareer.value.materias_opcionales || [];
+          
+          console.log('getMateriaStatus - checking materia', oid, 'obligatorias:', obligatorias.length, 'opcionales:', opcionales.length);
+          
+          // PRIMERO: Si hay perfil seleccionado, verificar si es obligatoria del perfil (override total)
+          if (selectedProfile.value) {
+            const perfilObligatorias = selectedProfile.value.materias_obligatorias || [];
+            for (const pm of perfilObligatorias) {
+              if (Number(pm.id) === oid) {
+                console.log('  -> obligatoria del PERFIL');
+                return 'perfil_obligatoria';  // Estado especial para materias obligatorias del perfil
+              }
+            }
+          }
+          
+          // Luego verificar si es obligatoria de la carrera
+          for (const m of obligatorias) {
+            if (Number(m.id) === oid) {
+              console.log('  -> obligatoria de la carrera');
+              return 'obligatoria';
+            }
+          }
+          
+          // Verificar si es opcional
+          for (const m of opcionales) {
+            if (Number(m.id) === oid) {
+              console.log('  -> opcional');
+              return 'opcional';
+            }
+          }
+          
+          console.log('getMateriaStatus: materia', oid, 'not found in obligatorias or opcionales');
+          return 'excluded';  // Material no asociada a la carrera
+        }
+
+        function updateNodeColors() {
+          if (!svg) return;
+          
+          svg.selectAll('.node-card rect')
+            .style('stroke', function(d) {
+              const status = getMateriaStatus(d.id);
+              if (status === 'obligatoria') return '#ffffff';
+              if (status === 'perfil_obligatoria') return '#f0883e';
+              if (status === 'opcional') return '#d4a72c';
+              return '#30363d';
+            })
+            .style('stroke-width', function(d) {
+              const status = getMateriaStatus(d.id);
+              return (status === 'obligatoria' || status === 'perfil_obligatoria' || status === 'opcional') ? '3px' : '1px';
+            });
+        }
+
+        const institutos = ref([]);
+        
+        async function loadData() {
+          loading.value = true;
+          error.value = null;
+          
+          try {
+            // Load institutos first
+            const instResponse = await fetch(`${apiUrl.value}/institutos`, {
+              headers: { 'X-API-Key': apiKey.value }
+            });
+            if (instResponse.ok) {
+              institutos.value = await instResponse.json();
+            }
+            
+            // Then load materias
+            const response = await fetch(`${apiUrl.value}/materias/all/con-previas`, {
+              headers: { 'X-API-Key': apiKey.value }
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Error ${response.status}`);
+            }
+            
+            materias.value = await response.json();
+          } catch (e) {
+            error.value = e.message;
+            console.error('Load error:', e);
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        function buildGraphData() {
+          // Get all materias
+          let materiasList = [...materias.value];
+          
+          // Find math init and cdiv
+          const mathInitMateria = materiasList.find(m => 
+            removeAccents(m.name.toLowerCase()).includes('matematica inicial')
+          );
+          
+          // Filter out math init if disabled
+          if (!mathInitEnabled.value && mathInitMateria) {
+            const mathInitId = mathInitMateria.id;
+            materiasList = materiasList.filter(m => m.id !== mathInitId);
+            
+            // Remove math init from previas of other materias
+            materiasList = materiasList.map(m => {
+              const previasAprobado = (m.previas_aprobado || []).filter(p => p.id !== mathInitId);
+              const previasExonerado = (m.previas_exonerado || []).filter(p => p.id !== mathInitId);
+              return {
+                ...m,
+                previas_aprobado: previasAprobado,
+                previas_exonerado: previasExonerado
+              };
+            });
+          }
+          
+          // Si hay carrera seleccionada, filtrar materias de la carrera y del perfil
+          if (selectedCareer.value) {
+            const obligatoriasIds = new Set((selectedCareer.value.materias_obligatorias || []).map(m => Number(m.id)));
+            const opcionalesIds = new Set((selectedCareer.value.materias_opcionales || []).map(m => Number(m.id)));
+            let careerMateriaIds = new Set([...obligatoriasIds, ...opcionalesIds]);
+            
+            // Si hay perfil seleccionado, agregar sus materias obligatorias
+            if (selectedProfile.value) {
+              const profileObligatorias = selectedProfile.value.materias_obligatorias || [];
+              console.log('Adding profile obligatorias:', profileObligatorias.length);
+              profileObligatorias.forEach(m => careerMateriaIds.add(Number(m.id)));
+            }
+            
+            console.log('Filtering materias for career - obligatorias:', obligatoriasIds.size, 'opcionales:', opcionalesIds.size, 'total with profile:', careerMateriaIds.size);
+            
+            materiasList = materiasList.filter(m => careerMateriaIds.has(Number(m.id)));
+            console.log('After filtering:', materiasList.length, 'materias');
+          }
+          
+          const nodes = materiasList.map(m => ({
+            id: m.id,
+            name: m.name,
+            periodo: m.periodo,
+            creditos: m.creditos || 0,
+            instituto_id: m.instituto_id,
+            hasPrevia: ((m.previas_aprobado?.length || 0) > 0) || ((m.previas_exonerado?.length || 0) > 0)
+          }));
+          
+          const links = [];
+          
+          materiasList.forEach(materia => {
+            const allPrevias = [
+              ...(materia.previas_aprobado || []),
+              ...(materia.previas_exonerado || [])
+            ];
+            allPrevias.forEach(prev => {
+              // Solo crear links si ambos nodos existen en la lista filtrada
+              const prevExists = materiasList.some(m => m.id === prev.id);
+              if (prevExists) {
+                links.push({ source: prev.id, target: materia.id });
+              }
+            });
+          });
+          
+          return { nodes, links };
+        }
+
+        function calculateLevels(nodes, links) {
+          const levels = new Map();
+          
+          function getLevel(nodeId, visited = new Set()) {
+            if (visited.has(nodeId)) return 0;
+            visited.add(nodeId);
+            
+            const incomingLinks = links.filter(l => {
+              const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+              return targetId === nodeId;
+            });
+            
+            if (incomingLinks.length === 0) {
+              levels.set(nodeId, 0);
+              return 0;
+            }
+            
+            let maxPrevLevel = 0;
+            incomingLinks.forEach(l => {
+              const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+              maxPrevLevel = Math.max(maxPrevLevel, getLevel(sourceId, new Set(visited)));
+            });
+            
+            const finalLevel = maxPrevLevel + 1;
+            levels.set(nodeId, finalLevel);
+            return finalLevel;
+          }
+          
+          nodes.forEach(n => {
+            if (!levels.has(n.id)) {
+              getLevel(n.id);
+            }
+          });
+          
+          return levels;
+        }
+
+        function renderGraph() {
+          console.log('renderGraph called, selectedCareer:', selectedCareer.value ? selectedCareer.value.name : 'null');
+          
+          // Guardar el zoom actual antes de limpiar
+          const savedTransform = currentTransform;
+          
+          // Limpiar completamente el grafo anterior
+          const container = document.getElementById('graph');
+          container.innerHTML = '';
+          
+          // Reiniciar variables de D3
+          svg = null;
+          g = null;
+          zoom = null;
+          nodeMap.clear();
+          
+          containerBounds = container.getBoundingClientRect();
+          const width = containerBounds.width;
+          const height = containerBounds.height;
+          
+          svg = d3.select('#graph')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+          
+          const defs = svg.append('defs');
+          
+          defs.append('marker')
+            .attr('id', 'arrowhead')
+            .attr('viewBox', '-0 -4 8 8')
+            .attr('refX', 8)
+            .attr('refY', 0)
+            .attr('orient', 'auto')
+            .attr('markerWidth', 5)
+            .attr('markerHeight', 5)
+            .append('path')
+            .attr('d', 'M 0,-3 L 6,0 L 0,3')
+            .attr('fill', '#30363d');
+
+          g = svg.append('g').attr('class', 'smooth-transition');
+          
+          zoom = d3.zoom()
+            .scaleExtent([0.3, 2])
+            .on('zoom', (event) => {
+              // Disable transition during manual zoom/drag for responsiveness
+              g.classed('smooth-transition', false);
+              currentTransform = event.transform;
+              g.attr('transform', event.transform);
+            })
+            .on('end', () => {
+              // Re-enable transition after interaction ends
+              g.classed('smooth-transition', true);
+            });
+          
+          svg.call(zoom).on('dblclick.zoom', null);
+          
+          // Restaurar el zoom guardado si existe (con transición suave)
+          if (savedTransform && savedTransform !== d3.zoomIdentity) {
+            g.classed('smooth-transition', true);
+            svg.call(zoom.transform, savedTransform);
+            currentTransform = savedTransform;
+          } else {
+            g.classed('smooth-transition', true);
+          }
+          
+          const { nodes, links } = buildGraphData();
+          
+          if (nodes.length === 0) {
+            // Don't show error, just return and wait for data to load
+            return;
+          }
+
+          const levels = calculateLevels(nodes, links);
+          const maxLevel = Math.max(...levels.values());
+          
+          // Group nodes by institute
+          const nodesByInstituto = {};
+          nodes.forEach(n => {
+            const instId = n.instituto_id || 0;
+            if (!nodesByInstituto[instId]) {
+              nodesByInstituto[instId] = [];
+            }
+            nodesByInstituto[instId].push(n);
+          });
+          
+          // Sort institutes by their first node's level
+          const instituteIds = Object.keys(nodesByInstituto).sort((a, b) => {
+            const aFirst = nodesByInstituto[a].find(n => levels.get(n.id) === 0);
+            const bFirst = nodesByInstituto[b].find(n => levels.get(n.id) === 0);
+            return a - b;
+          });
+          
+          // Create visual levels with max 4 nodes per institute per level
+          const MAX_NODES_PER_LEVEL = 4;
+          const visualLevels = [];
+          const nodeVisualLevels = {};
+          
+          // For each institute, assign visual levels
+          instituteIds.forEach(instId => {
+            const instNodes = nodesByInstituto[instId];
+            
+            // Group nodes by original level for this institute
+            const levelGroups = {};
+            instNodes.forEach(n => {
+              const origLevel = levels.get(n.id) || 0;
+              if (!levelGroups[origLevel]) {
+                levelGroups[origLevel] = [];
+              }
+              levelGroups[origLevel].push(n);
+            });
+            
+            // Assign visual levels, max 4 per slot
+            // Track the next available level per institute
+            let instNextLevel = {};
+            Object.keys(levelGroups).forEach(origLevel => {
+              const groupNodes = levelGroups[origLevel];
+              
+              groupNodes.forEach((node, idx) => {
+                let baseLevel = parseInt(origLevel);
+                if (!instNextLevel[instId]) instNextLevel[instId] = {};
+                
+                // Initialize if needed
+                if (instNextLevel[instId][baseLevel] === undefined) {
+                  instNextLevel[instId][baseLevel] = baseLevel;
+                }
+                
+                // Calculate visual level - overflow every 4 nodes
+                let visualLevel = instNextLevel[instId][baseLevel];
+                if (idx >= MAX_NODES_PER_LEVEL) {
+                  const overflowLevels = Math.floor((idx) / MAX_NODES_PER_LEVEL);
+                  visualLevel = baseLevel + overflowLevels;
+                }
+                
+                // Update for next node
+                if (idx === MAX_NODES_PER_LEVEL - 1 || (idx > MAX_NODES_PER_LEVEL && (idx + 1) % MAX_NODES_PER_LEVEL === 0)) {
+                  const nextOverflow = Math.floor((idx + 1) / MAX_NODES_PER_LEVEL);
+                  instNextLevel[instId][baseLevel] = baseLevel + nextOverflow;
+                }
+                
+                nodeVisualLevels[node.id] = visualLevel;
+                
+                while (visualLevels.length <= visualLevel) {
+                  visualLevels.push([]);
+                }
+                visualLevels[visualLevel].push({ node, instId });
+              });
+            });
+          });
+          
+          // Second pass: ensure cross-institute dependencies don't end up at same/higher level
+          // If materia A is previa of materia B, B must be at higher level than A
+          let hasConflicts = true;
+          while (hasConflicts) {
+            hasConflicts = false;
+            
+            // Rebuild visualLevels array from nodeVisualLevels
+            const newVisualLevels = [];
+            Object.keys(nodeVisualLevels).forEach(nodeId => {
+              const vl = nodeVisualLevels[nodeId];
+              const node = nodes.find(n => n.id === Number(nodeId));
+              const instId = node ? (node.instituto_id || 0) : 0;
+              while (newVisualLevels.length <= vl) {
+                newVisualLevels.push([]);
+              }
+              newVisualLevels[vl].push({ node, instId: String(instId) });
+            });
+            
+            // Check each link
+            links.forEach(link => {
+              const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+              const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+              
+              const sourceLevel = nodeVisualLevels[sourceId];
+              const targetLevel = nodeVisualLevels[targetId];
+              
+              // If target is at same or lower level than source (prerequisite), push it down
+              if (targetLevel <= sourceLevel) {
+                nodeVisualLevels[targetId] = sourceLevel + 1;
+                hasConflicts = true;
+              }
+            });
+          }
+          
+          // Rebuild visualLevels array with final nodeVisualLevels
+          const finalVisualLevels = [];
+          Object.keys(nodeVisualLevels).forEach(nodeId => {
+            const vl = nodeVisualLevels[nodeId];
+            const node = nodes.find(n => n.id === Number(nodeId));
+            const instId = node ? (node.instituto_id || 0) : 0;
+            while (finalVisualLevels.length <= vl) {
+              finalVisualLevels.push([]);
+            }
+            finalVisualLevels[vl].push({ node, instId: String(instId) });
+          });
+          
+          const maxVisualLevel = finalVisualLevels.length - 1;
+
+          // Calculate positions - for each VISUAL level, center nodes in that level
+          const nodeWidth = 180;
+          const nodeHeight = 56;
+          const horizontalGap = 30;
+          const verticalGap = 80;
+          const marginX = 100;
+          const marginY = 60;
+          const instituteGap = 80;
+          
+          // Calculate max width for each institute (across all VISUAL levels)
+          const instituteMaxWidth = {};
+          instituteIds.forEach(instId => {
+            let maxCount = 0;
+            for (let vLevel = 0; vLevel < finalVisualLevels.length; vLevel++) {
+              const count = finalVisualLevels[vLevel].filter(item => item.instId == instId).length;
+              if (count > maxCount) maxCount = count;
+            }
+            instituteMaxWidth[instId] = maxCount * nodeWidth + Math.max(0, maxCount - 1) * horizontalGap;
+          });
+          
+          // Calculate start position for each institute
+          const instituteStartX = {};
+          let currentX = marginX;
+          instituteIds.forEach(instId => {
+            instituteStartX[instId] = currentX;
+            currentX += instituteMaxWidth[instId] + instituteGap;
+          });
+          
+          // Center everything in viewport
+          const totalWidth = currentX - marginX;
+          const viewportCenter = width / 2;
+          const globalOffsetX = viewportCenter - totalWidth / 2;
+          
+          // Position nodes using VISUAL levels: each institute has fixed horizontal space
+          for (let vLevel = 0; vLevel < finalVisualLevels.length; vLevel++) {
+            const levelItems = finalVisualLevels[vLevel];
+            if (levelItems.length === 0) continue;
+            
+            const y = marginY + vLevel * (nodeHeight + verticalGap);
+            
+            // Group items by institute for this visual level
+            const byInstitute = {};
+            levelItems.forEach(item => {
+              const instId = item.instId;
+              if (!byInstitute[instId]) byInstitute[instId] = [];
+              byInstitute[instId].push(item.node);
+            });
+            
+            instituteIds.forEach(instId => {
+              const nodesAtThisLevel = byInstitute[instId] || [];
+              if (nodesAtThisLevel.length === 0) return;
+              
+              const instStart = instituteStartX[instId] + globalOffsetX - marginX;
+              const instWidth = instituteMaxWidth[instId];
+              const groupWidth = nodesAtThisLevel.length * nodeWidth + Math.max(0, nodesAtThisLevel.length - 1) * horizontalGap;
+              const startX = instStart + (instWidth - groupWidth) / 2;
+              
+              nodesAtThisLevel.forEach((node, i) => {
+                node.x = startX + i * (nodeWidth + horizontalGap) + nodeWidth / 2;
+                node.y = y + nodeHeight / 2;
+              });
+            });
+          }
+
+          nodeMap.clear();
+
+          links.forEach(linkData => {
+            const sourceNode = nodes.find(n => n.id === (typeof linkData.source === 'object' ? linkData.source.id : linkData.source));
+            const targetNode = nodes.find(n => n.id === (typeof linkData.target === 'object' ? linkData.target.id : linkData.target));
+            
+            if (!sourceNode || !targetNode) return;
+            
+            const x1 = sourceNode.x;
+            const y1 = sourceNode.y + nodeHeight / 2 + 2;
+            const x2 = targetNode.x;
+            const y2 = targetNode.y - nodeHeight / 2 - 2;
+            
+            const midY = (y1 + y2) / 2;
+            
+            const path = d3.path();
+            path.moveTo(x1, y1);
+            path.bezierCurveTo(x1, midY, x2, midY, x2, y2);
+            
+            g.append('path')
+              .attr('class', 'link')
+              .attr('data-source', linkData.source)
+              .attr('data-target', linkData.target)
+              .attr('d', path.toString())
+              .style('pointer-events', 'none')
+              .style('fill', 'none')
+              .style('stroke', '#8b949e')
+              .style('stroke-width', '1.5px')
+              .style('opacity', '0.7');
+          });
+          
+          // Institutes are organized in bands, but we don't draw visible bands
+          // The positioning logic above handles the horizontal separation by institute
+          
+          const node = g.selectAll('.node-card')
+            .data(nodes)
+            .enter()
+            .append('g')
+            .attr('class', 'node-card')
+            .attr('transform', d => `translate(${d.x - nodeWidth/2}, ${d.y - nodeHeight/2})`)
+            .style('cursor', 'pointer');
+
+          node.append('rect')
+            .attr('width', nodeWidth)
+            .attr('height', nodeHeight)
+            .attr('rx', 6)
+            .style('fill', '#21262d')
+            .style('stroke', function(d) {
+              const status = getMateriaStatus(d.id);
+              if (status === 'obligatoria') return '#ffffff';  // Blanco: obligatoria de carrera
+              if (status === 'perfil_obligatoria') return '#f0883e';  // Naranja: obligatoria del perfil
+              if (status === 'opcional') return '#d4a72c';  // Amarillo oscuro: opcional de carrera
+              return '#30363d';  // Sin carrera
+            })
+            .style('stroke-width', function(d) {
+              const status = getMateriaStatus(d.id);
+              // Cualquier materia de la carrera/perfil: 3px, sin carrera: 1px
+              return (status === 'obligatoria' || status === 'perfil_obligatoria' || status === 'opcional') ? '3px' : '1px';
+            })
+            .style('cursor', 'pointer')
+            .on('mouseenter', function(event, d) {
+              highlightLinks(d.id);
+            })
+            .on('mouseleave', function(event, d) {
+              clearHighlight();
+            })
+            .on('click', function(event, d) {
+              event.stopPropagation();
+              selectedMateria.value = materias.value.find(m => m.id === d.id);
+            });
+
+          node.append('circle')
+            .attr('cx', 10)
+            .attr('cy', nodeHeight / 2)
+            .attr('r', 5)
+            .attr('fill', d => getPeriodoColor(d.periodo));
+
+          const lineHeight = 12;
+          const startY = 18;
+          const maxLines = 2;
+          
+          node.each(function(d) {
+            const words = d.name.split(' ');
+            let lines = [];
+            let currentLine = '';
+            
+            words.forEach(word => {
+              const testLine = currentLine ? currentLine + ' ' + word : word;
+              if (testLine.length <= 22) {
+                currentLine = testLine;
+              } else {
+                if (currentLine) lines.push(currentLine);
+                currentLine = word;
+              }
+            });
+            if (currentLine) lines.push(currentLine);
+            if (lines.length > maxLines) {
+              lines = lines.slice(0, maxLines);
+              lines[maxLines - 1] = lines[maxLines - 1].slice(0, 19) + '...';
+            }
+            
+            const group = d3.select(this);
+            
+            lines.forEach((line, i) => {
+              group.append('text')
+                .attr('x', nodeWidth / 2)
+                .attr('y', startY + i * lineHeight)
+                .attr('text-anchor', 'middle')
+                .text(line);
+            });
+            
+            group.append('text')
+              .attr('class', 'creditos')
+              .attr('x', nodeWidth / 2)
+              .attr('y', nodeHeight - 10)
+              .attr('text-anchor', 'middle')
+              .text(`${d.creditos} créd.`);
+          });
+        }
+
+        function focusAndOpenModal(id, openModal = true) {
+          try {
+            if (!g) return;
+            
+            if (isMobile.value) {
+              sidebarCollapsed.value = true;
+            }
+            
+            // Get fresh container bounds
+            const container = document.getElementById('graph');
+            const bounds = container.getBoundingClientRect();
+            const width = bounds.width;
+            const height = bounds.height;
+            
+            // Build graph data WITH the SAME filter as visible graph
+            let materiasList = [...materias.value];
+            
+            // Handle math init (same as buildGraphData)
+            const mathInitMateria = materiasList.find(m => 
+              removeAccents(m.name.toLowerCase()).includes('matematica inicial')
+            );
+            if (!mathInitEnabled.value && mathInitMateria) {
+              materiasList = materiasList.filter(m => m.id !== mathInitMateria.id);
+            }
+            
+            // Filter by career (SAME as buildGraphData)
+            if (selectedCareer.value) {
+              const obligatoriasIds = new Set((selectedCareer.value.materias_obligatorias || []).map(m => Number(m.id)));
+              const opcionalesIds = new Set((selectedCareer.value.materias_opcionales || []).map(m => Number(m.id)));
+              let careerMateriaIds = new Set([...obligatoriasIds, ...opcionalesIds]);
+              
+              if (selectedProfile.value) {
+                const profileObligatorias = selectedProfile.value.materias_obligatorias || [];
+                profileObligatorias.forEach(m => careerMateriaIds.add(Number(m.id)));
+              }
+              
+              materiasList = materiasList.filter(m => careerMateriaIds.has(Number(m.id)));
+            }
+            
+            const nodesAll = materiasList.map(m => ({
+              id: m.id,
+              name: m.name,
+              periodo: m.periodo,
+              creditos: m.creditos || 0,
+              instituto_id: m.instituto_id,
+              hasPrevia: ((m.previas_aprobado?.length || 0) > 0) || ((m.previas_exonerado?.length || 0) > 0)
+            }));
+            
+            // Calculate levels for all nodes (SAME as buildGraphData)
+            const linksAll = [];
+            materiasList.forEach(materia => {
+              const allPrevias = [
+                ...(materia.previas_aprobado || []),
+                ...(materia.previas_exonerado || [])
+              ];
+              allPrevias.forEach(prev => {
+                if (materiasList.some(m => m.id === prev.id)) {
+                  linksAll.push({ source: prev.id, target: materia.id });
+                }
+              });
+            });
+            
+            const levelsAll = calculateLevels(nodesAll, linksAll);
+            const maxLevelAll = Math.max(...levelsAll.values());
+            
+            // Group by institute (SAME as renderGraph)
+            const nodesByInstituto = {};
+            nodesAll.forEach(n => {
+              const instId = n.instituto_id || 0;
+              if (!nodesByInstituto[instId]) {
+                nodesByInstituto[instId] = [];
+              }
+              nodesByInstituto[instId].push(n);
+            });
+            
+            const instituteIds = Object.keys(nodesByInstituto).sort((a, b) => a - b);
+            
+            // Create visual levels with max 4 nodes per institute per level (SAME as renderGraph)
+            const MAX_NODES_PER_LEVEL = 4;
+            const visualLevelsAll = [];
+            
+            instituteIds.forEach(instId => {
+              const instNodes = nodesByInstituto[instId];
+              
+              const levelGroups = {};
+              instNodes.forEach(n => {
+                const origLevel = levelsAll.get(n.id) || 0;
+                if (!levelGroups[origLevel]) {
+                  levelGroups[origLevel] = [];
+                }
+                levelGroups[origLevel].push(n);
+              });
+              
+            let instNextLevel = {};
+            Object.keys(levelGroups).forEach(origLevel => {
+              const groupNodes = levelGroups[origLevel];
+              
+              groupNodes.forEach((node, idx) => {
+                let baseLevel = parseInt(origLevel);
+                if (!instNextLevel[instId]) instNextLevel[instId] = {};
+                
+                if (instNextLevel[instId][baseLevel] === undefined) {
+                  instNextLevel[instId][baseLevel] = baseLevel;
+                }
+                
+                let visualLevel = instNextLevel[instId][baseLevel];
+                if (idx >= MAX_NODES_PER_LEVEL) {
+                  const overflowLevels = Math.floor((idx) / MAX_NODES_PER_LEVEL);
+                  visualLevel = baseLevel + overflowLevels;
+                }
+                
+                if (idx === MAX_NODES_PER_LEVEL - 1 || (idx > MAX_NODES_PER_LEVEL && (idx + 1) % MAX_NODES_PER_LEVEL === 0)) {
+                  const nextOverflow = Math.floor((idx + 1) / MAX_NODES_PER_LEVEL);
+                  instNextLevel[instId][baseLevel] = baseLevel + nextOverflow;
+                }
+                
+                while (visualLevelsAll.length <= visualLevel) {
+                  visualLevelsAll.push([]);
+                }
+                visualLevelsAll[visualLevel].push({ node, instId });
+              });
+              });
+            });
+            
+            // Second pass: ensure cross-institute dependencies don't end up at same/higher level
+            let hasConflicts = true;
+            while (hasConflicts) {
+              hasConflicts = false;
+              
+              const newVisualLevelsAll = [];
+              Object.keys(nodeVisualLevelsAll).forEach(nodeId => {
+                const vl = nodeVisualLevelsAll[nodeId];
+                const node = nodesAll.find(n => n.id === Number(nodeId));
+                const instId = node ? (node.instituto_id || 0) : 0;
+                while (newVisualLevelsAll.length <= vl) {
+                  newVisualLevelsAll.push([]);
+                }
+                newVisualLevelsAll[vl].push({ node, instId: String(instId) });
+              });
+              
+              linksAll.forEach(link => {
+                const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+                
+                const sourceLevel = nodeVisualLevelsAll[sourceId];
+                const targetLevel = nodeVisualLevelsAll[targetId];
+                
+                if (targetLevel <= sourceLevel) {
+                  nodeVisualLevelsAll[targetId] = sourceLevel + 1;
+                  hasConflicts = true;
+                }
+              });
+            }
+            
+            // Rebuild finalVisualLevelsAll
+            const finalVisualLevelsAll = [];
+            Object.keys(nodeVisualLevelsAll).forEach(nodeId => {
+              const vl = nodeVisualLevelsAll[nodeId];
+              const node = nodesAll.find(n => n.id === Number(nodeId));
+              const instId = node ? (node.instituto_id || 0) : 0;
+              while (finalVisualLevelsAll.length <= vl) {
+                finalVisualLevelsAll.push([]);
+              }
+              finalVisualLevelsAll[vl].push({ node, instId: String(instId) });
+            });
+            
+            // Calculate positions using SAME algorithm as renderGraph
+            const nodeWidth = 180;
+            const nodeHeight = 56;
+            const horizontalGap = 30;
+            const verticalGap = 80;
+            const marginX = 100;
+            const marginY = 60;
+            const instituteGap = 80;
+            
+            // Calculate max width for each institute (across all VISUAL levels)
+            const instituteMaxWidth = {};
+            instituteIds.forEach(instId => {
+              let maxCount = 0;
+              for (let vLevel = 0; vLevel < finalVisualLevelsAll.length; vLevel++) {
+                const count = finalVisualLevelsAll[vLevel].filter(item => item.instId == instId).length;
+                if (count > maxCount) maxCount = count;
+              }
+              instituteMaxWidth[instId] = maxCount * nodeWidth + Math.max(0, maxCount - 1) * horizontalGap;
+            });
+            
+            // Calculate start position for each institute
+            const instituteStartX = {};
+            let currentX = marginX;
+            instituteIds.forEach(instId => {
+              instituteStartX[instId] = currentX;
+              currentX += instituteMaxWidth[instId] + instituteGap;
+            });
+            
+            // Center everything in viewport
+            const totalWidth = currentX - marginX;
+            const viewportCenter = width / 2;
+            const globalOffsetX = viewportCenter - totalWidth / 2;
+            
+            // Position nodes using VISUAL levels
+            for (let vLevel = 0; vLevel < finalVisualLevelsAll.length; vLevel++) {
+              const levelItems = finalVisualLevelsAll[vLevel];
+              if (levelItems.length === 0) continue;
+              
+              const y = marginY + vLevel * (nodeHeight + verticalGap);
+              
+              const byInstitute = {};
+              levelItems.forEach(item => {
+                const instId = item.instId;
+                if (!byInstitute[instId]) byInstitute[instId] = [];
+                byInstitute[instId].push(item.node);
+              });
+              
+              instituteIds.forEach(instId => {
+                const nodesAtThisLevel = byInstitute[instId] || [];
+                if (nodesAtThisLevel.length === 0) return;
+                
+                const instStart = instituteStartX[instId] + globalOffsetX - marginX;
+                const instWidth = instituteMaxWidth[instId];
+                const groupWidth = nodesAtThisLevel.length * nodeWidth + Math.max(0, nodesAtThisLevel.length - 1) * horizontalGap;
+                const startX = instStart + (instWidth - groupWidth) / 2;
+                
+                nodesAtThisLevel.forEach((node, i) => {
+                  node.x = startX + i * (nodeWidth + horizontalGap) + nodeWidth / 2;
+                  node.y = y + nodeHeight / 2;
+                });
+              });
+            }
+            
+            const nodeData = nodesAll.find(n => n.id === id);
+            
+            if (!nodeData) {
+              console.log('Node not found:', id);
+              return;
+            }
+            
+            // Calculate transform to center the node
+            const scale = 1.2;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const newX = centerX - nodeData.x * scale;
+            const newY = centerY - nodeData.y * scale;
+            
+            const transform = d3.zoomIdentity.translate(newX, newY).scale(scale);
+            
+            // Enable transition before applying transform
+            g.classed('smooth-transition', true);
+            g.attr('transform', transform.toString());
+            currentTransform = transform;
+            
+            if (openModal) {
+              const materia = materias.value.find(m => m.id === id);
+              if (materia) {
+                selectedMateria.value = materia;
+              }
+            }
+          } catch (e) {
+            console.error('Focus error:', e);
+          }
+        }
+
+        function highlightLinks(id) {
+          if (!g) return;
+          
+          g.selectAll('.link').each(function() {
+            const el = d3.select(this);
+            const sourceId = parseInt(el.attr('data-source'));
+            const targetId = parseInt(el.attr('data-target'));
+               
+            if (targetId === id) {
+              el.style('stroke', '#f85149').style('stroke-width', '2.5px').style('stroke-opacity', '1');
+            } else if (sourceId === id) {
+              el.style('stroke', '#3fb950').style('stroke-width', '2.5px').style('stroke-opacity', '1');
+            } else {
+              el.style('stroke', '').style('stroke-width', '').style('stroke-opacity', '0.2');
+            }
+          });
+        }
+
+        function clearHighlight() {
+          if (!g) return;
+          g.selectAll('.link')
+            .style('stroke', '')
+            .style('stroke-width', '')
+            .style('stroke-opacity', '');
+        }
+
+        function onSearchInput() {
+          if (searchQuery.value && filteredMaterias.value.length > 0) {
+            highlightedId.value = filteredMaterias.value[0].id;
+          } else {
+            highlightedId.value = null;
+          }
+        }
+
+        function resetView() {
+          try {
+            if (g) {
+              g.attr('transform', 'translate(0, 0) scale(1)');
+            }
+            currentTransform = d3.zoomIdentity;
+            highlightedId.value = null;
+            searchQuery.value = '';
+          } catch (e) {
+            console.error('Reset view error:', e);
+          }
+        }
+
+        function closeModal() {
+          selectedMateria.value = null;
+        }
+
+        function toggleSidebar() {
+          sidebarCollapsed.value = !sidebarCollapsed.value;
+        }
+        
+        function checkMobile() {
+          isMobile.value = window.innerWidth <= 768;
+          if (isMobile.value) {
+            sidebarCollapsed.value = true;
+          } else {
+            sidebarCollapsed.value = false;
+          }
+        }
+        
+        function handleClickOutside(event) {
+          if (!isMobile.value) return;
+          const sidebar = document.querySelector('.sidebar');
+          const toggleBtn = document.querySelector('.sidebar-toggle');
+          if (sidebar && !sidebar.contains(event.target) && !toggleBtn?.contains(event.target)) {
+            sidebarCollapsed.value = true;
+          }
+        }
+        
+        onMounted(() => {
+          loadCarreras().then(function() {
+            loadData().then(function() {
+              renderGraph();
+            });
+          });
+          checkMobile();
+          document.addEventListener('click', handleClickOutside);
+          window.addEventListener('resize', checkMobile);
+        });
+        
+        // Watches para detectar cambios en carrera y perfil
+        watch(selectedCareer, function(newVal, oldVal) {
+          console.log('WATCH selectedCareer changed:', oldVal ? oldVal.name : 'null', '->', newVal ? newVal.name : 'null');
+          onCareerChange();
+        });
+        
+        watch(selectedProfile, function(newVal, oldVal) {
+          console.log('WATCH selectedProfile changed:', oldVal ? oldVal.name : 'null', '->', newVal ? newVal.name : 'null');
+          if (newVal !== null) {
+            onProfileChange();
+          }
+        });
+
+        return {
+          apiUrl,
+          apiKey,
+          materias,
+          loading,
+          error,
+          searchQuery,
+          highlightedId,
+          filteredMaterias,
+          selectedMateria,
+          filtro,
+          sidebarCollapsed,
+          isMobile,
+          selectedCareer,
+          selectedProfile,
+          mathInitEnabled,
+          carreras,
+          perfiles,
+          institutos,
+          getInstitutoName,
+          setFiltro,
+          loadData,
+          loadCarreras,
+          onCareerChange,
+          onProfileChange,
+          onMathInitChange,
+          resetView,
+          focusAndOpenModal,
+          onSearchInput,
+          closeModal,
+          toggleSidebar,
+          highlightLinks,
+          clearHighlight,
+          capitalize
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
